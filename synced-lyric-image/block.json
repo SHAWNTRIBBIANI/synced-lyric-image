@@ -1,0 +1,21 @@
+{
+	"apiVersion": 3,
+	"name": "tongchun/synced-lyric-image",
+	"title": "同步歌词图片",
+	"category": "media",
+	"icon": "format-audio",
+	"description": "音频播放时，歌词图片按行随时间轴淡入淡出。",
+	"supports": { "html": false },
+	"attributes": {
+		"audioUrl": { "type": "string" },
+		"audioId": { "type": "number" },
+		"imageUrl": { "type": "string" },
+		"imageId": { "type": "number" },
+		"rowsText": { "type": "string", "default": "" },
+		"cuesText": { "type": "string", "default": "" },
+		"blend": { "type": "boolean", "default": false }
+	},
+	"editorScript": "file:./editor.js",
+	"viewScript": "file:./frontend.js",
+	"style": "file:./style.css"
+}
