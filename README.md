@@ -1,10 +1,119 @@
-# 同步歌词图片 Synced Lyric Image
+# Synced Lyric Image · 同步歌词图片
 
-一个 WordPress 古腾堡区块插件：音频播放时，歌词图片按行随时间轴淡入淡出。
+A WordPress block plugin: while the audio plays, lines of your lyric **image** fade in and out in sync with the music.
 
-适合在博客发布歌曲时使用——保留手写稿、歌词海报的图片质感，而不是退化成纯文字歌词。
+Perfect for music posts where you want to keep the texture of a handwritten manuscript or lyric poster, instead of falling back to plain text lyrics.
 
-## 效果
+一个 WordPress 古腾堡区块插件：音频播放时，歌词**图片**按行随时间轴淡入淡出。适合在博客发布歌曲时使用——保留手写稿、歌词海报的图片质感，而不是退化成纯文字歌词。
+
+---
+
+## Features
+
+- Each lyric line fades in at its timestamp (with a subtle rise + de-blur), and fades out when sung
+- Auto-trims horizontal whitespace of every line (canvas-based ink detection)
+- One lyric line can span multiple image rows (e.g. `8-9`)
+- Long instrumental gaps fade to a subtle `· · ·` breather
+- White-background images can blend into light themes via a one-click toggle (`mix-blend-mode: multiply`), or use a transparent PNG directly
+- Minimal player controls that inherit your theme's colors
+
+## Install
+
+1. Download `synced-lyric-image.zip` from [Releases](../../releases)
+2. WP Admin → Plugins → Add New → Upload Plugin → Activate
+3. Edit a post → insert the **Synced Lyric Image** block (Media category)
+
+## Usage
+
+After inserting the block:
+
+1. **Pick the audio** (mp3 / flac / … from your media library)
+2. **Pick the lyric image**
+3. **Fill in the row bands** — how to slice the image, one band per line:
+
+   ```
+   top% bottom% [left% right%]
+   ```
+
+   Example: `14.4 19.4` covers the vertical span from 14.4% to 19.4% of the image height.
+   Left/right are auto-trimmed, so you usually don't need them — only set them to exclude stray ink (like a signature).
+   For neatly typeset lyric screenshots, use the sidebar button "Split into N equal bands".
+
+4. **Fill in the timeline** — when to show which band, one cue per line:
+
+   ```
+   [mm:ss.xx] row
+   [mm:ss.xx] firstRow-lastRow
+   ```
+
+   Example: `[00:41.32] 2` shows band 2 at 41.32s; `[03:09.78] 8-9` shows bands 8 and 9 together (one sung line written across two rows).
+
+### Full example (宋冬野《落雁》 handwritten manuscript, 739×975)
+
+Bands (band 1 is the handwritten title shown during the intro; the trailing `0 63` on the last two bands crops out the signature at bottom-right):
+
+```
+4.4 11.9
+14.4 19.4
+20.4 24.3
+25.7 30.4
+33.4 38.1
+38.6 43.3
+43.7 48.0
+50.8 55.4
+56.6 60.6
+61.7 65.4
+67.0 71.4
+74.1 78.8
+79.5 83.8
+84.9 89.4 0 63
+89.7 94.1 0 63
+```
+
+Timeline:
+
+```
+[00:03.00] 1
+[00:41.32] 2
+[00:55.50] 3
+[01:04.60] 4
+[01:29.13] 5
+[01:35.59] 6
+[01:41.05] 7
+[01:43.57] 8
+[01:49.21] 9
+[01:55.89] 10
+[02:03.03] 11
+[02:12.50] 12
+[02:19.59] 13
+[02:25.91] 14
+[02:33.02] 15
+[03:09.78] 8-9
+[03:22.00] 10
+[03:29.09] 11
+[03:38.40] 12
+[03:45.51] 13
+[03:51.80] 14
+[03:59.02] 15
+[04:06.97] 14-15
+[04:21.27] 14-15
+```
+
+## Tips
+
+- **Where to get timestamps**: NetEase Cloud Music / QQ Music lyric pages usually expose LRC; extract each `[mm:ss.xx]` and map lines to image rows
+- **White-background images**: just toggle "Blend white background" in the sidebar — no image editing needed (best on light themes)
+- **For a true transparent background**: knock out the white and save as PNG for the cleanest result
+
+## Technical notes
+
+- Dynamic block (PHP `render_callback`); zero-dependency vanilla JS on the frontend; no build step in the editor (plain `wp.element`)
+- Bands are rendered with `background-position` cropping — the image is never physically sliced
+- Auto horizontal trim uses canvas pixel scanning; cross-origin images gracefully fall back to full width
+
+---
+
+## 功能
 
 - 每句歌词在对应时间点淡入（轻微上浮 + 去模糊），唱完淡出
 - 自动收紧每行的左右空白（canvas 扫描墨迹范围）
@@ -44,56 +153,7 @@
 
    例：`[00:41.32] 2` 表示 41.32 秒时显示第 2 条行带；`[03:09.78] 8-9` 表示同时显示第 8、9 两条（一句歌词写了两行的情况）。
 
-### 完整示例（宋冬野《落雁》手写稿，739×975）
-
-行带（第 1 条是手写标题，前奏时显示；最后两行末尾的 `0 63` 用于裁掉右下角签名）：
-
-```
-4.4 11.9
-14.4 19.4
-20.4 24.3
-25.7 30.4
-33.4 38.1
-38.6 43.3
-43.7 48.0
-50.8 55.4
-56.6 60.6
-61.7 65.4
-67.0 71.4
-74.1 78.8
-79.5 83.8
-84.9 89.4 0 63
-89.7 94.1 0 63
-```
-
-时间轴：
-
-```
-[00:03.00] 1
-[00:41.32] 2
-[00:55.50] 3
-[01:04.60] 4
-[01:29.13] 5
-[01:35.59] 6
-[01:41.05] 7
-[01:43.57] 8
-[01:49.21] 9
-[01:55.89] 10
-[02:03.03] 11
-[02:12.50] 12
-[02:19.59] 13
-[02:25.91] 14
-[02:33.02] 15
-[03:09.78] 8-9
-[03:22.00] 10
-[03:29.09] 11
-[03:38.40] 12
-[03:45.51] 13
-[03:51.80] 14
-[03:59.02] 15
-[04:06.97] 14-15
-[04:21.27] 14-15
-```
+完整示例见上方英文部分（《落雁》手写稿的行带与时间轴配置可直接复制使用）。
 
 ## 技巧
 
@@ -103,6 +163,6 @@
 
 ## 技术说明
 
-- 动态区块（PHP render_callback），前台零依赖 vanilla JS，编辑器端无构建步骤（wp.element）
-- 行带显示用 background-position 裁切，不做物理切图
+- 动态区块（PHP `render_callback`），前台零依赖 vanilla JS，编辑器端无构建步骤（`wp.element`）
+- 行带显示用 `background-position` 裁切，不做物理切图
 - 行带左右自动收紧基于 canvas 像素扫描，跨域图片会自动回退为整宽显示
