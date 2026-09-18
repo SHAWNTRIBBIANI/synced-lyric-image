@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Sync Tap Timer · 打拍子对轴工具</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Songti SC", "SimSun", "Microsoft YaHei", serif;
+    background: #f5f1e8; color: #22201e;
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; padding: 32px 16px 64px;
+  }
+  h1 { font-size: 22px; letter-spacing: 0.3em; margin-bottom: 4px; }
+  .tip { font-size: 13px; color: #8a8577; margin-bottom: 24px; line-height: 1.9; text-align: center; }
+  .tip kbd { background: #fff; border: 1px solid #c9c2ae; border-bottom-width: 2px; border-radius: 4px; padding: 1px 8px; font-family: inherit; }
+
+  .stage { width: min(92vw, 560px); text-align: center; margin-bottom: 20px; }
+  .cur-line { font-size: 30px; min-height: 56px; font-weight: 600; letter-spacing: 0.06em; }
+  .next-line { font-size: 15px; color: #9a9484; min-height: 24px; margin-top: 6px; }
+  .progress-num { font-size: 12px; color: #b0a992; margin-top: 10px; }
+
+  .controls { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; justify-content: center; }
+  button {
+    font-family: inherit; cursor: pointer; border-radius: 6px;
+    border: 1px solid #b9b29d; background: #fff; color: #22201e;
+    padding: 8px 18px; font-size: 14px; transition: all .15s;
+  }
+  button:hover { background: #efe9da; }
+  #tapBtn {
+    width: min(92vw, 560px); padding: 22px; font-size: 20px; letter-spacing: 0.4em;
+    background: #22201e; color: #f5f1e8; border: none; border-radius: 10px;
+    margin-bottom: 8px;
+  }
+  #tapBtn:hover { background: #3a362e; }
+  #tapBtn:active { transform: scale(0.985); }
+
+  .offset { font-size: 12px; color: #8a8577; margin-bottom: 24px; }
+  .offset button { padding: 2px 10px; font-size: 12px; }
+
+  .result { width: min(92vw, 560px); }
+  .result h2 { font-size: 14px; color: #8a8577; margin-bottom: 8px; font-weight: normal; }
+  .result textarea {
+    width: 100%; height: 260px; font-family: Consolas, monospace; font-size: 13px;
+    border: 1px solid #c9c2ae; border-radius: 6px; padding: 10px; background: #fff;
+  }
+  .log { width: min(92vw, 560px); margin-top: 16px; font-size: 12px; color: #9a9484; max-height: 180px; overflow-y: auto; }
+  .log div { padding: 2px 0; border-bottom: 1px dashed #ddd5c2; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<h1>打拍子对轴 · Sync Tap Timer</h1>
+<p class="tip">
+  点「播放」，听伴奏走。<b>每一句唱出来的瞬间</b>按 <kbd>空格</kbd>（或点大按钮）。<br>
+  按错了按 <kbd>Z</kbd> 撤销上一句。全部打完自动生成时间轴配置。
+</p>
+
+<div class="stage">
+  <div class="cur-line" id="curLine">准备好了吗？</div>
+  <div class="next-line" id="nextLine"></div>
+  <div class="progress-num" id="progNum"></div>
+</div>
+
+<button id="tapBtn">记 录 这 一 句（空格）</button>
+
+<div class="controls">
+  <button id="playBtn">▶ 播放</button>
+  <button id="undoBtn">↩ 撤销上一句 (Z)</button>
+  <button id="back5Btn">⏪ 后退 5 秒</button>
+</div>
+
+<div class="offset">
+  反应补偿：<button id="offMinus">-</button> <span id="offVal">-0.25s</span> <button id="offPlus">+</button>
+  （人按下的时刻总比听到的晚一点，自动往前修正）
+</div>
+
+<div class="result" id="resultBox" style="display:none">
+  <h2>✅ 完成！复制下面这段到区块的「时间轴配置」：</h2>
+  <textarea id="resultText" readonly></textarea>
+  <div class="controls" style="margin-top:10px">
+    <button id="copyBtn">📋 复制</button>
+    <button id="dlBtn">⬇ 下载 txt</button>
+  </div>
+</div>
+
+<div class="log" id="log"></div>
+
+<audio id="audio" preload="auto"></audio>
+
+<script>
+/* ==================== 配置区：只改这里 ==================== */
+
+// 音频文件名（和本工具放在同一文件夹）
+const AUDIO_SRC = "your-song.mp3";
+
+// 歌词，一句一行（顺序 = 歌词图片里行带的顺序）
+const LINES = [
+  "第一句歌词",
+  "第二句歌词",
+  "……"
+];
+
+// 前奏期间显示标题行的时间点（秒）与行带号；不需要可设为 null
+const TITLE_CUE = "[00:02.00] 1";
+
+/* ==================== 以下不用动 ==================== */
+
+document.getElementById("audio").src = AUDIO_SRC;
+
+const audio = document.getElementById("audio");
+const curLine = document.getElementById("curLine");
+const nextLine = document.getElementById("nextLine");
+const progNum = document.getElementById("progNum");
+const playBtn = document.getElementById("playBtn");
+const undoBtn = document.getElementById("undoBtn");
+const back5Btn = document.getElementById("back5Btn");
+const tapBtn = document.getElementById("tapBtn");
+const log = document.getElementById("log");
+const resultBox = document.getElementById("resultBox");
+const resultText = document.getElementById("resultText");
+
+let idx = 0;
+let marks = [];
+let offset = -0.25;
+
+function fmt(t) {
+  const m = Math.floor(t / 60), s = (t % 60).toFixed(2).padStart(5, "0");
+  return `[${String(m).padStart(2,"0")}:${s}]`;
+}
+function refresh() {
+  if (idx < LINES.length) {
+    curLine.textContent = `第 ${idx+1} 句：${LINES[idx]}`;
+    nextLine.textContent = idx+1 < LINES.length ? `下一句：${LINES[idx+1]}` : "（最后一句了）";
+    progNum.textContent = `${idx} / ${LINES.length} 已记录`;
+  } else {
+    curLine.textContent = "🎉 全部记录完成";
+    nextLine.textContent = "";
+    progNum.textContent = `${LINES.length} / ${LINES.length}`;
+  }
+  let html = "";
+  for (let i = marks.length - 1; i >= 0; i--) {
+    html += `<div><span>${i+1}. ${LINES[i]}</span><span>${fmt(marks[i])}</span></div>`;
+  }
+  log.innerHTML = html;
+}
+
+function tap() {
+  if (idx >= LINES.length) return;
+  marks.push(audio.currentTime);
+  idx++;
+  refresh();
+  if (idx >= LINES.length) finish();
+}
+
+function undo() {
+  if (marks.length === 0) return;
+  marks.pop();
+  idx--;
+  audio.currentTime = Math.max(0, marks.length ? marks[marks.length-1] : 0);
+  refresh();
+  resultBox.style.display = "none";
+}
+
+function finish() {
+  let out = (TITLE_CUE ? TITLE_CUE + "\n" : "");
+  marks.forEach((t, i) => {
+    const adj = Math.max(0, t + offset);
+    out += `${fmt(adj)} ${i+2}\n`;
+  });
+  resultText.value = out;
+  resultBox.style.display = "block";
+  resultBox.scrollIntoView({ behavior: "smooth" });
+}
+
+playBtn.onclick = () => {
+  if (audio.paused) { audio.play(); playBtn.textContent = "⏸ 暂停"; }
+  else { audio.pause(); playBtn.textContent = "▶ 播放"; }
+};
+undoBtn.onclick = undo;
+back5Btn.onclick = () => { audio.currentTime = Math.max(0, audio.currentTime - 5); };
+tapBtn.onclick = tap;
+
+document.getElementById("offMinus").onclick = () => { offset = Math.round((offset - 0.05)*100)/100; document.getElementById("offVal").textContent = offset.toFixed(2)+"s"; if(idx>=LINES.length) finish(); };
+document.getElementById("offPlus").onclick  = () => { offset = Math.round((offset + 0.05)*100)/100; document.getElementById("offVal").textContent = offset.toFixed(2)+"s"; if(idx>=LINES.length) finish(); };
+
+document.getElementById("copyBtn").onclick = () => {
+  resultText.select();
+  navigator.clipboard.writeText(resultText.value).then(() => {
+    document.getElementById("copyBtn").textContent = "✅ 已复制";
+    setTimeout(() => document.getElementById("copyBtn").textContent = "📋 复制", 1500);
+  });
+};
+document.getElementById("dlBtn").onclick = () => {
+  const blob = new Blob([resultText.value], {type: "text/plain;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "timeline.txt";
+  a.click();
+};
+
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") { e.preventDefault(); tap(); }
+  if (e.code === "KeyZ") { undo(); }
+});
+
+refresh();
+</script>
+</body>
+</html>
