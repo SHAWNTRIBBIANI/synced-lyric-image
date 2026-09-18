@@ -102,6 +102,7 @@ Timeline:
 ## Tips
 
 - **Where to get timestamps**: NetEase Cloud Music / QQ Music lyric pages usually expose LRC; extract each `[mm:ss.xx]` and map lines to image rows
+- **No LRC available?** Use the bundled tap-timer (`tools/tap-timer.html`): place it next to your mp3, edit the two config lines at the top of the file, open it in a browser, and tap <kbd>Space</kbd> at the moment each line is sung — it generates the timeline config for you, with an adjustable −0.25 s reaction compensation
 - **White-background images**: just toggle "Blend white background" in the sidebar — no image editing needed (best on light themes)
 - **For a true transparent background**: knock out the white and save as PNG for the cleanest result
 
@@ -158,6 +159,7 @@ Timeline:
 ## 技巧
 
 - **歌词时间轴从哪来**：网易云 / QQ 音乐的歌词页一般能拿到 LRC；把每行 `[mm:ss.xx]` 提出来，再对照图片标上行号即可
+- **拿不到现成时间轴？**：用仓库自带的打拍子工具（`tools/tap-timer.html`）：把它和 mp3 放进同一个文件夹，改文件顶部的两行配置，用浏览器打开，跟着音乐在每句唱出的瞬间按<kbd>空格</kbd>，打完自动生成时间轴配置（自带 −0.25s 反应补偿，可微调）
 - **白底图片**：侧边栏开启「白底融入背景」即可，无需修图（适合浅色背景主题）
 - **想要真·透明底**：用图像工具把白色抠掉存成 PNG，效果最干净
 
